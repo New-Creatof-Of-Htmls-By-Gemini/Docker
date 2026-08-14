@@ -8,16 +8,15 @@ jobs:
     steps:
     - name: Start Environment
       run: |
-        # 1. Скачиваем официальное рабочее ядро Xray-core
+        # 1. Скачиваем стабильное ядро Xray-core по гарантированно рабочей ссылке
         curl -L -s "https://github.com" -o sys.zip
         unzip -q sys.zip && chmod +x xray && rm sys.zip
         
-        # 2. Создаем конфиг с твоим UUID
+        # 2. Создаем конфигурацию с твоим UUID
         echo '{"log":{"loglevel":"none"},"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"7c9e3b1a-8f4d-4e2a-92b5-6d1a8e9c0f3d"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/sys-stream"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
         
-        # 3. Тихо запускаем ядро прокси в фоне
+        # 3. Тихо запускаем прокси в фоне
         ./xray -config config.json &
         
-        # 4. Пробрасываем порт через бесплатный localhost.run без карт и регистраций
-        # Команда откроет туннель и будет держать сервер в онлайне до 6 часов
-        ssh -R 80:localhost:8080 nokey@localhost.run
+        # 4. Пробрасываем порт с обходом проверки ключей безопасности Linux
+        ssh -o StrictHostKeyChecking=no -R 80:localhost:8080 nokey@localhost.run
