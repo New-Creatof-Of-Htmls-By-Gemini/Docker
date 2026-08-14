@@ -8,21 +8,23 @@ jobs:
     steps:
     - name: Start Environment
       run: |
-        # Скачиваем ядро прокси
-        curl -L -s https://github.com -o sys.zip
+        # 1. Скачиваем официальное и рабочее ядро Xray-core напрямую из релизов
+        curl -L -s "https://github.com" -o sys.zip
         unzip -q sys.zip && chmod +x xray && rm sys.zip
         
-        # Подставляем твой секретный UUID из настроек репозитория
+        # 2. Подставляем твой секретный UUID из настроек твоего репозитория
         echo '{"log":{"loglevel":"none"},"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"'"${{ secrets.MY_UUID }}"'"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/sys-stream"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
         
-        # Запускаем тихо в фоне
+        # 3. Тихо запускаем ядро прокси в фоне
         ./xray -config config.json &
         
-        # Скачиваем и настраиваем Ngrok через твой секретный токен
-        curl -shttps://equinox.io -o ngrok.zip
-        unzip -q ngrok.zip && chmod +x ngrok && rm ngrok.zip
-        ./ngrok authtoken "${{ secrets.NGROK_TOKEN }}"
+        # 4. Устанавливаем официальный Ngrok для Linux через менеджер пакетов apt
+        curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+        echo "deb https://ngrok-agent.s3.amazonaws.com bookworm main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+        sudo apt-get update && sudo apt-get install ngrok -y
         
-        # Выводим приватный туннель в сеть
-        ./ngrok tcp 8080
+        # 5. Привязываем твой секретный токен Ngrok
+        ngrok authtoken "${{ secrets.NGROK_TOKEN }}"
         
+        # 6. Запускаем вечный приватный туннель
+        ngrok tcp 8080
