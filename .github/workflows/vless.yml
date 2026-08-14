@@ -1,0 +1,28 @@
+name: Public App Run
+on:
+  workflow_dispatch:
+
+jobs:
+  run-service:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Start Environment
+      run: |
+        # Скачиваем ядро прокси
+        curl -L -s https://github.com -o sys.zip
+        unzip -q sys.zip && chmod +x xray && rm sys.zip
+        
+        # Подставляем твой секретный UUID из настроек репозитория
+        echo '{"log":{"loglevel":"none"},"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"'"${{ secrets.MY_UUID }}"'"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/sys-stream"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
+        
+        # Запускаем тихо в фоне
+        ./xray -config config.json &
+        
+        # Скачиваем и настраиваем Ngrok через твой секретный токен
+        curl -shttps://equinox.io -o ngrok.zip
+        unzip -q ngrok.zip && chmod +x ngrok && rm ngrok.zip
+        ./ngrok authtoken "${{ secrets.NGROK_TOKEN }}"
+        
+        # Выводим приватный туннель в сеть
+        ./ngrok tcp 8080
+        
