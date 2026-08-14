@@ -12,12 +12,13 @@ jobs:
         curl -L -s "https://github.com" -o sys.zip
         unzip -q sys.zip && chmod +x xray && rm sys.zip
         
-        # 2. Создаем конфигурацию VLESS
-        echo '{"log":{"loglevel":"none"},"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"7c9e3b1a-8f4d-4e2a-92b5-6d1a8e9c0f3d"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/sys-stream"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
+        # 2. Создаем конфигурацию VLESS (с логами в консоль, чтобы видеть ошибки)
+        echo '{"log":{"loglevel":"warning"},"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"7c9e3b1a-8f4d-4e2a-92b5-6d1a8e9c0f3d"}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/sys-stream"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
         
-        # 3. Тихо запускаем прокси в фоне
-        ./xray -config config.json &
+        # 3. Запускаем прокси с полным путем в фоне и выводом ошибок
+        /home/runner/work/xray -config /home/runner/work/config.json > xray_log.txt 2>&1 &
+        sleep 3
+        cat xray_log.txt # Посмотрим, запустился ли он
         
-        # 4. Открываем вечный туннель через Pinggy (без карт и токенов)
-        # Он выдаст чистый рабочий https/tls адрес
-        ssh -p 443 -o StrictHostKeyChecking=no -R 0:localhost:8080 r@free.pinggy.io
+        # 4. Открываем туннель через Pinggy
+        ssh -p 443 -o StrictHostKeyChecking=no -R 0:127.0.0.1:8080 r@free.pinggy.io
